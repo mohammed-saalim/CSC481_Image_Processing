@@ -35,6 +35,53 @@ def preprocess_image(image):
     
     return processed_image
 
+def to_bool(value):
+    return value.lower() == 'true'
+
+
+
+# Custom preprocessing function
+def custom_preprocess_image(image, params):
+    # Helper function to convert strings to booleans
+    def to_bool(value):
+        return value.lower() == 'true'
+
+    # Apply Gaussian Blur for noise reduction if specified
+    if to_bool(params.get('noiseReduction', 'false')):
+        blur_kernel_size = int(params.get('blurKernelSize', 5))
+        blur_kernel_size = max(1, blur_kernel_size)  # Ensure kernel size is at least 1
+        blur_kernel_size = blur_kernel_size + 1 if blur_kernel_size % 2 == 0 else blur_kernel_size  # Ensure kernel size is odd
+        image = cv2.GaussianBlur(image, (blur_kernel_size, blur_kernel_size), 0)
+
+    # Apply histogram equalization for contrast adjustment if specified
+    if to_bool(params.get('contrastAdjustment', 'false')):
+        if len(image.shape) == 3:  # Colored image
+            ycrcb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+            ycrcb[:, :, 0] = cv2.equalizeHist(ycrcb[:, :, 0])
+            image = cv2.cvtColor(ycrcb, cv2.COLOR_YCrCb2BGR)
+        else:  # Grayscale image
+            image = cv2.equalizeHist(image)
+
+    # Apply edge detection using Canny if specified
+    if to_bool(params.get('edgeDetection', 'false')):
+        lower_threshold = int(params.get('lowerThreshold', 100))
+        upper_threshold = int(params.get('upperThreshold', 200))
+        image = cv2.Canny(image, lower_threshold, upper_threshold)
+
+    # Apply morphological operations if specified
+    if to_bool(params.get('morphologicalOperation', 'false')):
+        operation = params.get('operationType', 'close')  # 'close' or 'open'
+        kernel_size = int(params.get('kernelSize', 3))
+        kernel = np.ones((kernel_size, kernel_size), np.uint8)
+        if operation == 'close':
+            image = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
+        elif operation == 'open':
+            image = cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
+
+    return image
+
+
+
 # Text extraction using OpenAI
 def extract_text_with_openai(image_path):
     with open(image_path, "rb") as image_file:
@@ -76,9 +123,27 @@ def preprocess_route():
     
     return send_file(temp_file.name, mimetype='image/png', as_attachment=True, download_name='processed_image.png')
 
+@app.route('/custom_preprocess', methods=['POST'])
+def custom_preprocess_route():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files['file']
+    image = cv2.imdecode(np.frombuffer(file.read(), np.uint8), cv2.IMREAD_COLOR)
+
+    # Apply preprocessing (adjust as needed)
+    processed_image = custom_preprocess_image(image, request.form)
+
+    # Save processed image temporarily
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+    cv2.imwrite(temp_file.name, processed_image)
+
+    return send_file(temp_file.name, mimetype='image/png')
+
 @app.route('/extract_text', methods=['POST'])
 def extract_text_route():
     if 'file' not in request.files:
+        print("No file received in request")
         return jsonify({"error": "No file uploaded"}), 400
 
     file = request.files['file']
