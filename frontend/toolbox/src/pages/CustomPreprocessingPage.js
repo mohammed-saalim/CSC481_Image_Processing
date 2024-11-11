@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Button, Box, Typography } from '@mui/material';
 import PreprocessingControls from '../components/PreprocessingControls';
-import { applyCustomPreprocessing, extractText } from '../services/api';
+import { applyCustomPreprocessing, extractTextPreprocessed } from '../services/api'; // Use the new function
 import { Link } from 'react-router-dom';
 
 function CustomPreprocessingPage({ image }) {
   const [processedImage, setProcessedImage] = useState(null);
   const [preprocessingError, setPreprocessingError] = useState('');
-  const [extractedText, setExtractedText] = useState(''); 
+  const [comparisonText, setComparisonText] = useState(''); 
 
   const handleCustomPreprocess = (params) => {
     if (image) {
@@ -39,8 +39,8 @@ function CustomPreprocessingPage({ image }) {
     }
   };
 
-  const handleExtractText = () => {
-    if (processedImage) {
+  const handleExtractPreprocessedText = () => {
+    if (image && processedImage) {
       // Fetch the processed image from the URL to get the Blob
       fetch(processedImage)
         .then(response => {
@@ -51,37 +51,33 @@ function CustomPreprocessingPage({ image }) {
         })
         .then(blob => {
           // Convert the blob to a File object (if necessary)
-          const file = new File([blob], 'processed_image.png', { type: blob.type });
+          const processedFile = new File([blob], 'processed_image.png', { type: blob.type });
           const formData = new FormData();
-          formData.append('file', file);
+          formData.append('original_image', image);
+          formData.append('preprocessed_image', processedFile);
   
           // Debugging output
-          console.log('Sending FormData to backend:', formData);
+          console.log('Sending FormData with original and processed images to backend:', formData);
   
           // Send the FormData to the backend
-          extractText(formData)
+          extractTextPreprocessed(formData)
             .then(response => {
-              console.log('Text extraction response:', response.data);
-              setExtractedText(response.data.extracted_text);
+              console.log('Text extraction comparison response:', response.data);
+              setComparisonText(response.data);
             })
             .catch(error => {
-              console.error('Error during text extraction:', error);
-              setExtractedText('Failed to extract text.');
+              console.error('Error during text extraction from original and preprocessed images:', error);
+              setComparisonText('Failed to extract comparison text.');
             });
         })
         .catch(error => {
           console.error('Error converting processed image to Blob:', error);
         });
     } else {
-      alert('No processed image available for text extraction');
+      alert('Ensure both original and preprocessed images are available for extraction');
     }
   };
   
-  
-      
-  
-  
-
   return (
     <Box
       sx={{
@@ -139,10 +135,10 @@ function CustomPreprocessingPage({ image }) {
                 <Button
                   variant="contained"
                   color="secondary"
-                  onClick={handleExtractText}
+                  onClick={handleExtractPreprocessedText}
                   sx={{ marginTop: 2 }}
                 >
-                  Extract Text from Processed Image
+                  Extract Text from Original and Processed Images
                 </Button>
 
               </>
@@ -153,10 +149,10 @@ function CustomPreprocessingPage({ image }) {
                 Click "Apply Preprocessing" to see the result.
               </Typography>
             )}
-             {extractedText && (
+             {comparisonText && (
               <Box sx={{ marginTop: 2 }}>
-                <Typography variant="h6">Extracted Text:</Typography>
-                <Typography variant="body1">{extractedText}</Typography>
+                <Typography variant="h6">Preprocessed vs Original Text Comparison:</Typography>
+                <Typography variant="body1">{JSON.stringify(comparisonText, null, 2)}</Typography>
               </Box>
             )}
           </div>

@@ -19,10 +19,29 @@ export const applyCustomPreprocessing = (formData) => {
   });
 };
 
-
-
 export const extractText = (image) => {
   const formData = new FormData();
   formData.append('file', image);
   return axios.post(`${API_BASE_URL}/extract_text`, formData);
 };
+
+export const extractTextPreprocessed = (formData) => {
+  return axios.post(`${API_BASE_URL}/extract_text_preprocessed`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+
+export const applyCategoryPreprocessing = (formData, category) => {
+  return axios.post(`${API_BASE_URL}/category_preprocess/${category}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    responseType: 'blob',
+  });
+};
+
+
+
