@@ -75,6 +75,7 @@ def preprocess_license_plate(image):
     
     return processed_image
 
+
 def preprocess_table_image(image):
     """
     Preprocessing for table images.
@@ -239,10 +240,6 @@ def encode_image_to_base64(image):
     return base64_image
 
 def generate_opencv_code_with_image(image):
-    """
-    Generates OpenCV preprocessing code using OpenAI API based on the input image (as a NumPy array).
-    The image is encoded to base64 and used to construct a prompt for code generation.
-    """
     # Convert the image (NumPy array) to a PIL Image
     image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
@@ -262,24 +259,18 @@ def generate_opencv_code_with_image(image):
 
     # Make a request to the OpenAI API
     response = client.chat.completions.create(
-        model="gpt-4o-mini",  # Alternatively, use 'text-davinci-003' if desired
+        model="gpt-4o-mini",
         messages=[
             {
                 "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt_text},
-                    {
-                        "type": "image_url",
-                        "image_url": {"url": f"data:image/png;base64,{base64_image}"}
-                    }
-                ]
+                "content": prompt_text
             }
         ],
         max_tokens=200
     )
 
-    # Extract and return the generated code
-    generated_code = response.choices[0].message['content'].strip()
+    # Correctly accessing the content
+    generated_code = response.choices[0].message.content.strip()
     print("Generated OpenCV Code:\n", generated_code)
 
     return generated_code
@@ -469,6 +460,12 @@ def category_preprocess(category):
 
     return send_file(temp_file.name, mimetype='image/png', as_attachment=True, download_name='processed_image.png')
 
+
+@app.route('/')
+def home():
+    return "CSC 481 Image Processing !"
+
+print(app.url_map)
 
 if __name__ == '__main__':
     app.run(debug=True)

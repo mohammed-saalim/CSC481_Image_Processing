@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000'; // Ensure your Flask server runs on this address
+const API_BASE_URL = 'http://127.0.0.1:5000'; // Ensure your Flask server runs on this address
 
 export const preprocessImage = (image) => {
   const formData = new FormData();
