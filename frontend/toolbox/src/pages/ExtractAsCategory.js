@@ -5,8 +5,9 @@ import { applyCategoryPreprocessing, extractTextPreprocessed } from '../services
 function ExtractAsCategoryPage({ image }) {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [processedImage, setProcessedImage] = useState(null);
-  const [extractedText, setExtractedText] = useState('');
-  const [comparisonText, setComparisonText] = useState('');
+  const [originalText, setOriginalText] = useState('');
+  const [preprocessedText, setPreprocessedText] = useState('');
+  const [qualitativeFeedback, setQualitativeFeedback] = useState('');
 
   const handleCategoryChange = (event) => {
     setSelectedCategory(event.target.value);
@@ -17,7 +18,7 @@ function ExtractAsCategoryPage({ image }) {
       const formData = new FormData();
       formData.append('file', image);
 
-      applyCategoryPreprocessing(formData, selectedCategory) // Pass selectedCategory as argument
+      applyCategoryPreprocessing(formData, selectedCategory)
         .then((response) => {
           const imageUrl = URL.createObjectURL(response.data);
           setProcessedImage(imageUrl);
@@ -45,7 +46,12 @@ function ExtractAsCategoryPage({ image }) {
 
           return extractTextPreprocessed(formData);
         })
-        .then((response) => setComparisonText(response.data))
+        .then((response) => {
+          // Parse response and set state for original text, preprocessed text, and feedback
+          setOriginalText(response.data.original_text || 'No text extracted from original image');
+          setPreprocessedText(response.data.preprocessed_text || 'No text extracted from preprocessed image');
+          setQualitativeFeedback(response.data.qualitative_feedback || 'No feedback available');
+        })
         .catch((error) => console.error('Error during text extraction from processed image:', error));
     } else {
       alert('Ensure both original and processed images are available for extraction');
@@ -79,9 +85,8 @@ function ExtractAsCategoryPage({ image }) {
             <MenuItem value="license-plate">License Plate</MenuItem>
             <MenuItem value="dark-background">Dark Background</MenuItem>
             <MenuItem value="far-away-text">Far Away Text</MenuItem>
-            <MenuItem value="tables">Tables</MenuItem>
+            <MenuItem value="table-image">Tables</MenuItem>
             <MenuItem value="pill-bottle">Pill Bottle</MenuItem>
-            <MenuItem value="ai-preprocessing">AI Preprocessing</MenuItem> {/* New AI Preprocessing category */}
           </Select>
 
           <Button
@@ -110,10 +115,24 @@ function ExtractAsCategoryPage({ image }) {
             </>
           )}
 
-          {comparisonText && (
+          {originalText && (
             <Box sx={{ marginTop: 3 }}>
-              <Typography variant="h6">Comparison of Original vs Preprocessed Text:</Typography>
-              <Typography variant="body1">{comparisonText}</Typography>
+              <Typography variant="h6">Extracted Text from Original Image:</Typography>
+              <Typography variant="body1">{originalText}</Typography>
+            </Box>
+          )}
+
+          {preprocessedText && (
+            <Box sx={{ marginTop: 3 }}>
+              <Typography variant="h6">Text Extracted from Preprocessed Image:</Typography>
+              <Typography variant="body1">{preprocessedText}</Typography>
+            </Box>
+          )}
+
+          {qualitativeFeedback && (
+            <Box sx={{ marginTop: 3 }}>
+              <Typography variant="h6">Qualitative Feedback on Preprocessing Impact:</Typography>
+              <Typography variant="body1">{qualitativeFeedback}</Typography>
             </Box>
           )}
         </>

@@ -10,10 +10,12 @@ from PIL import Image
 from difflib import SequenceMatcher
 import io
 import openai
+import ast
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
+
 
 
 # Image preprocessing function
@@ -195,25 +197,29 @@ def read_image_from_request(file):
     return image
 
 
-def execute_generated_code(image, generated_code):
-    """
-    Executes the generated OpenCV code to preprocess the input image.
-    """
-    # Define a local context for executing the code
-    local_context = {'cv2': cv2, 'np': np, 'input_image': image, 'processed_image': None}
+# def execute_generated_code(image, generated_code):
+#     """
+#     Executes the generated OpenCV code to preprocess the input image.
+#     """
+#     local_context = {'cv2': cv2, 'np': np, 'input_image': image, 'processed_image': None}
 
-    try:
-        # Execute the generated code within a controlled scope
-        exec(generated_code, {}, local_context)
-        processed_image = local_context.get('processed_image')
+#     # Check if the generated code contains placeholders or incomplete code
+#     if "<YOUR_BASE64_STRING_HERE>" in generated_code or "Example usage" in generated_code:
+#         raise ValueError("Generated code contains a placeholder or is incomplete.")
 
-        if processed_image is None:
-            raise ValueError("Generated code did not produce a processed image.")
-    except Exception as e:
-        print("Error executing generated code:", str(e))
-        processed_image = None
+#     try:
+#         # Attempt to execute the generated code
+#         exec(generated_code, {}, local_context)
+#         processed_image = local_context.get('processed_image')
 
-    return processed_image
+#         if processed_image is None:
+#             raise ValueError("Generated code did not produce a processed image.")
+#     except Exception as e:
+#         print("Error executing generated code:", str(e))
+#         processed_image = None
+
+#     return processed_image
+
 
 
 def encode_image_to_base64(image):
@@ -239,41 +245,40 @@ def encode_image_to_base64(image):
     
     return base64_image
 
-def generate_opencv_code_with_image(image):
-    # Convert the image (NumPy array) to a PIL Image
-    image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+# def generate_opencv_code_with_image(image):
+#     # Convert the image (NumPy array) to a PIL Image
+#     image_pil = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
-    # Save the PIL Image to a BytesIO buffer and encode it as base64
-    buffer = io.BytesIO()
-    image_pil.save(buffer, format="PNG")
-    base64_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+#     # Save the PIL Image to a BytesIO buffer and encode it as base64
+#     buffer = io.BytesIO()
+#     image_pil.save(buffer, format="PNG")
+#     base64_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
-    # Construct the prompt
-    prompt_text = (
-        "You are a Python and OpenCV expert. Given a base64-encoded image, generate Python code "
-        "using OpenCV that preprocesses the image to enhance text extraction for OCR. The code "
-        "should be valid Python and may include techniques like noise reduction, contrast enhancement, "
-        "Canny edge detection, binarization, and morphological operations."
-        "Please provide only the code without explanation."
-    )
+#     # Construct the prompt
+#     prompt_text = (
+#     "You are a Python and OpenCV expert. Given a base64-encoded image, generate valid Python code "
+#     "using OpenCV to preprocess the image for OCR enhancement. The code must produce an output that "
+#     "can be returned as 'processed_image' with no placeholders, dependencies, or incomplete logic. "
+#     "Return the image as 'processed_image'. Only output valid code without comments."
+# )
 
-    # Make a request to the OpenAI API
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "user",
-                "content": prompt_text
-            }
-        ],
-        max_tokens=200
-    )
 
-    # Correctly accessing the content
-    generated_code = response.choices[0].message.content.strip()
-    print("Generated OpenCV Code:\n", generated_code)
+#     # Make a request to the OpenAI API
+#     response = client.chat.completions.create(
+#         model="gpt-4o-mini",
+#         messages=[{"role": "user", "content": prompt_text}],
+#         max_tokens=400
+#     )
 
-    return generated_code
+#     # Get the generated code
+#     generated_code = response.choices[0].message.content.strip()
+
+#     # Check for incomplete or placeholder content
+#     if "<YOUR_BASE64_STRING_HERE>" in generated_code or "Example usage" in generated_code:
+#         raise ValueError("Generated code contains a placeholder or is incomplete.")
+
+#     print("Generated OpenCV Code:\n", generated_code)
+#     return generated_code
 
 
 
@@ -385,23 +390,11 @@ def extract_text_preprocessed():
         original_text = extract_text_with_openai(original_path)
         preprocessed_text = extract_text_with_openai(preprocessed_path)
 
-        # Calculate similarity/accuracy percentage using SequenceMatcher
-        similarity_ratio = SequenceMatcher(None, original_text, preprocessed_text).ratio()
-        accuracy_percentage = similarity_ratio * 100
-
-        # Determine if accuracy increased or decreased
-        if accuracy_percentage > 100:
-            accuracy_summary = "Accuracy percentage increased."
-        elif accuracy_percentage < 100:
-            accuracy_summary = "Accuracy percentage decreased."
-        else:
-            accuracy_summary = "No change in accuracy percentage."
-
         # Get qualitative feedback from OpenAI on how preprocessing impacted text extraction
         feedback_prompt = (
             f"Given the text extracted from the original image: '{original_text}' "
             f"and the text extracted from the preprocessed image: '{preprocessed_text}', "
-            "please provide a brief analysis on whether preprocessing improved or worsened the OCR accuracy."
+            "Please analyze how preprocessing has impacted OCR accuracy based on a comparison of the original text and preprocessed text"
         )
 
         feedback_response = client.chat.completions.create(
@@ -419,8 +412,6 @@ def extract_text_preprocessed():
     return jsonify({
         "original_text": original_text,
         "preprocessed_text": preprocessed_text,
-        "accuracy_percentage": accuracy_percentage,
-        "accuracy_summary": accuracy_summary,
         "qualitative_feedback": qualitative_feedback
     })
 
@@ -442,12 +433,12 @@ def category_preprocess(category):
         processed_image = preprocess_dark_background_image(image)
     elif category == "far-away-text":
         processed_image = preprocess_far_away_text(image)
-    elif category == "ai-preprocessing":
-        # Generate OpenCV code with AI
-        generated_code = generate_opencv_code_with_image(image)
+    # elif category == "ai-preprocessing":
+    #     # Generate OpenCV code with AI
+    #     generated_code = generate_opencv_code_with_image(image)
 
-        # Execute the generated code
-        processed_image = execute_generated_code(image, generated_code)
+    #     # Execute the generated code
+    #     processed_image = execute_generated_code(image, generated_code)
 
         if processed_image is None:
             return jsonify({"error": "AI-generated preprocessing failed"}), 500
@@ -465,7 +456,7 @@ def category_preprocess(category):
 def home():
     return "CSC 481 Image Processing !"
 
-print(app.url_map)
+# print(app.url_map)
 
 if __name__ == '__main__':
     app.run(debug=True)
