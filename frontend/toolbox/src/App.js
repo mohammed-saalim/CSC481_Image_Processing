@@ -6,7 +6,7 @@ import UploadImage from './components/UploadImage';
 import ImagePreview from './components/ImagePreview';
 import ExtractedText from './components/ExtractedText';
 import CustomPreprocessingPage from './pages/CustomPreprocessingPage';
-import ExtractAsCategoryPage from './pages/ExtractAsCategory'; 
+import ExtractAsCategoryPage from './pages/ExtractAsCategory';
 import { preprocessImage, extractText, extractTextPreprocessed } from './services/api';
 
 function App() {
@@ -107,8 +107,8 @@ function App() {
                     <UploadImage onImageUpload={handleImageUpload} />
                   </CardContent>
                 </Card>
-                <ImagePreview image={selectedImage} title="Original Image" />
-                {preprocessedImage && <ImagePreview image={preprocessedImage} title="Preprocessed Image" />}
+                {selectedImage && <ImagePreview image={selectedImage} />}
+                {preprocessedImage && <ImagePreview image={preprocessedImage} />}
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', marginTop: '1rem' }}>
                   {selectedImage && (
                     <Button variant="contained" color="primary" onClick={handlePreprocess}>

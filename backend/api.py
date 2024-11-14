@@ -51,6 +51,34 @@ def preprocess_image(image):
     return processed_image
 
 
+def preprocess_id_card(image):
+    """
+    Preprocessing specifically for ID card images.
+    Focuses on enhancing text regions, removing noise, and improving contrast.
+    """
+    # Convert image to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Apply Gaussian blur for noise reduction
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    
+    # Use adaptive thresholding for binarization
+    thresh = cv2.adaptiveThreshold(
+        blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        cv2.THRESH_BINARY_INV, 11, 2
+    )
+    
+    # Morphological operations to enhance text structure and reduce noise
+    kernel = np.ones((2, 2), np.uint8)
+    processed_image = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    
+    # Optional: Additional edge detection for clarity
+    edges = cv2.Canny(processed_image, 50, 150)
+    processed_image = cv2.bitwise_or(processed_image, edges)
+    
+    return processed_image
+
+
 def preprocess_license_plate(image):
     """
     Preprocessing specifically for license plate images.
@@ -433,6 +461,8 @@ def category_preprocess(category):
         processed_image = preprocess_dark_background_image(image)
     elif category == "far-away-text":
         processed_image = preprocess_far_away_text(image)
+    elif category == "id-card":
+        processed_image = preprocess_id_card(image)    
     # elif category == "ai-preprocessing":
     #     # Generate OpenCV code with AI
     #     generated_code = generate_opencv_code_with_image(image)
@@ -456,7 +486,7 @@ def category_preprocess(category):
 def home():
     return "CSC 481 Image Processing !"
 
-# print(app.url_map)
+print(app.url_map)
 
 if __name__ == '__main__':
     app.run(debug=True)

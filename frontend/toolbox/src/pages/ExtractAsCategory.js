@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Box, Typography, Select, MenuItem } from '@mui/material';
+import { Button, Box, Typography, Select, MenuItem, Modal } from '@mui/material';
 import { applyCategoryPreprocessing, extractTextPreprocessed } from '../services/api';
 
 function ExtractAsCategoryPage({ image }) {
@@ -8,6 +8,8 @@ function ExtractAsCategoryPage({ image }) {
   const [originalText, setOriginalText] = useState('');
   const [preprocessedText, setPreprocessedText] = useState('');
   const [qualitativeFeedback, setQualitativeFeedback] = useState('');
+  const [openModal, setOpenModal] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState('');
 
   const handleCategoryChange = (event) => {
     setSelectedCategory(event.target.value);
@@ -47,7 +49,6 @@ function ExtractAsCategoryPage({ image }) {
           return extractTextPreprocessed(formData);
         })
         .then((response) => {
-          // Parse response and set state for original text, preprocessed text, and feedback
           setOriginalText(response.data.original_text || 'No text extracted from original image');
           setPreprocessedText(response.data.preprocessed_text || 'No text extracted from preprocessed image');
           setQualitativeFeedback(response.data.qualitative_feedback || 'No feedback available');
@@ -56,6 +57,15 @@ function ExtractAsCategoryPage({ image }) {
     } else {
       alert('Ensure both original and processed images are available for extraction');
     }
+  };
+
+  const handleImageClick = (src) => {
+    setModalImageSrc(src);
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
   };
 
   return (
@@ -87,6 +97,7 @@ function ExtractAsCategoryPage({ image }) {
             <MenuItem value="far-away-text">Far Away Text</MenuItem>
             <MenuItem value="table-image">Tables</MenuItem>
             <MenuItem value="pill-bottle">Pill Bottle</MenuItem>
+            <MenuItem value="id-card">ID Card</MenuItem>
           </Select>
 
           <Button
@@ -98,22 +109,48 @@ function ExtractAsCategoryPage({ image }) {
             Apply Preprocessing
           </Button>
 
-          <img src={URL.createObjectURL(image)} alt="Original" width="100%" style={{ marginBottom: '1rem' }} />
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              gap: 2,
+              width: '100%',
+              maxWidth: '800px',
+              margin: 'auto',
+              marginTop: 2,
+            }}
+          >
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="h6" align="center">Original Image</Typography>
+              <img
+                src={URL.createObjectURL(image)}
+                alt="Original"
+                style={{ maxWidth: '100%', cursor: 'pointer' }}
+                onClick={() => handleImageClick(URL.createObjectURL(image))}
+              />
+            </Box>
 
-          {processedImage && (
-            <>
-              <Typography variant="h5">Processed Image</Typography>
-              <img src={processedImage} alt="Processed" width="100%" />
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleExtractTextFromProcessed}
-                sx={{ marginTop: 3 }}
-              >
-                Extract Text from Processed Image
-              </Button>
-            </>
-          )}
+            {processedImage && (
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" align="center">Processed Image</Typography>
+                <img
+                  src={processedImage}
+                  alt="Processed"
+                  style={{ maxWidth: '100%', cursor: 'pointer' }}
+                  onClick={() => handleImageClick(processedImage)}
+                />
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={handleExtractTextFromProcessed}
+                  sx={{ marginTop: 2 }}
+                >
+                  Extract Text from Processed Image
+                </Button>
+              </Box>
+            )}
+          </Box>
 
           {originalText && (
             <Box sx={{ marginTop: 3 }}>
@@ -135,6 +172,23 @@ function ExtractAsCategoryPage({ image }) {
               <Typography variant="body1">{qualitativeFeedback}</Typography>
             </Box>
           )}
+
+          {/* Modal for image pop-out */}
+          <Modal open={openModal} onClose={handleCloseModal}>
+            <Box
+              sx={{
+                position: 'fixed',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+                outline: 'none',
+              }}
+            >
+              <img src={modalImageSrc} alt="Enlarged" style={{ width: '100%', height: 'auto' }} />
+            </Box>
+          </Modal>
         </>
       ) : (
         <Typography>No image selected. Please upload an image.</Typography>

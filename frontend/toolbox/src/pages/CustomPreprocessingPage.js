@@ -3,17 +3,18 @@ import { Button, Box, Typography } from '@mui/material';
 import PreprocessingControls from '../components/PreprocessingControls';
 import { applyCustomPreprocessing, extractTextPreprocessed } from '../services/api'; // Use the new function
 import { Link } from 'react-router-dom';
+import ImagePreview from '../components/ImagePreview'; // Import ImagePreview
 
 function CustomPreprocessingPage({ image }) {
   const [processedImage, setProcessedImage] = useState(null);
   const [preprocessingError, setPreprocessingError] = useState('');
-  const [comparisonText, setComparisonText] = useState(''); 
+  const [comparisonText, setComparisonText] = useState('');
 
   const handleCustomPreprocess = (params) => {
     if (image) {
       const formData = new FormData();
       formData.append('file', image); // Ensure `image` is a valid file object
-  
+
       // Add custom parameters to form data
       if (params && typeof params === 'object') {
         for (const [key, value] of Object.entries(params)) {
@@ -55,10 +56,10 @@ function CustomPreprocessingPage({ image }) {
           const formData = new FormData();
           formData.append('original_image', image);
           formData.append('preprocessed_image', processedFile);
-  
+
           // Debugging output
           console.log('Sending FormData with original and processed images to backend:', formData);
-  
+
           // Send the FormData to the backend
           extractTextPreprocessed(formData)
             .then(response => {
@@ -77,7 +78,7 @@ function CustomPreprocessingPage({ image }) {
       alert('Ensure both original and preprocessed images are available for extraction');
     }
   };
-  
+
   return (
     <Box
       sx={{
@@ -119,18 +120,13 @@ function CustomPreprocessingPage({ image }) {
             <Typography variant="h5" gutterBottom>
               Original Image
             </Typography>
-            <img
-              src={URL.createObjectURL(image)}
-              alt="Original"
-              width="100%"
-              style={{ marginBottom: '1rem' }}
-            />
+            <ImagePreview image={image} /> {/* Use ImagePreview for the original image */}
             {processedImage ? (
               <>
                 <Typography variant="h5" gutterBottom>
                   Processed Image
                 </Typography>
-                <img src={processedImage} alt="Processed" width="100%" />
+                <ImagePreview image={processedImage} /> {/* Use ImagePreview for the processed image */}
 
                 <Button
                   variant="contained"
@@ -149,7 +145,7 @@ function CustomPreprocessingPage({ image }) {
                 Click "Apply Preprocessing" to see the result.
               </Typography>
             )}
-             {comparisonText && (
+            {comparisonText && (
               <Box sx={{ marginTop: 2 }}>
                 <Typography variant="h6">Preprocessed vs Original Text Comparison:</Typography>
                 <Typography variant="body1">{JSON.stringify(comparisonText, null, 2)}</Typography>
