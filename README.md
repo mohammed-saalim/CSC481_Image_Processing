@@ -1,6 +1,6 @@
-CSC 481: Image Processing
-Instructor: Professor Jacub Furst (jfurst@cdm.depaul.edu)
-Grade: A
+### CSC 481: Image Processing
+#### Instructor: Professor Jacub Furst (jfurst@cdm.depaul.edu)
+#### Grade: A
 
 This class provided in-depth knowledge of image processing techniques, helping me develop practical skills and apply them to real-world problems. Key highlights include:
 
